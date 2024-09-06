@@ -100,13 +100,14 @@ verilator: verilator/croc.f $(SW)
 TOP_DESIGN     ?= croc_chip
 DUT_DESIGN	   ?= croc_soc
 BENDER_TARGETS ?= asic ihp13 rtl synthesis verilator
-MORTY_DEFINES  ?= VERILATOR SYNTHESIS MORTY TARGET_ASIC TARGET_SYNTHESIS
+MORTY_DEFINES  ?= VERILATOR SYNTHESIS MORTY TARGET_ASIC TARGET_SYNTHESIS COMMON_CELLS_ASSERTS_OFF
 PICKLE_OUT	   ?= $(PROJ_DIR)/pickle
+SV_FLIST       ?= $(PROJ_DIR)/croc.flist
 
 # list of source files
 $(PICKLE_OUT)/croc_sources.json: Bender.lock Bender.yml rtl/*/Bender.yml
 	mkdir -p pickle
-	$(BENDER) sources -f $(foreach t,$(BENDER_TARGERS),-t $(t)) > $@
+	$(BENDER) sources -f $(foreach t,$(BENDER_TARGETS),-t $(t)) > $@
 
 # pickle source files into one file/context
 $(PICKLE_OUT)/croc_morty.sv: $(PICKLE_OUT)/croc_sources.json rtl/* ihp13/*.sv
@@ -126,6 +127,9 @@ $(PICKLE_OUT)/croc_sv2v.v: $(PICKLE_OUT)/croc_svase.sv
 
 ## Generate verilog file for synthesis
 pickle: $(PICKLE_OUT)/croc_sv2v.v
+
+$(SV_FLIST): Bender.lock Bender.yml rtl/*/Bender.yml
+	$(BENDER) script flist-plus $(foreach t,$(BENDER_TARGETS),-t $(t)) $(foreach d,$(MORTY_DEFINES),-D $(d)=1) > $@
 
 include ihp13/technology.mk
 include yosys/yosys.mk
