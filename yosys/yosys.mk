@@ -49,10 +49,29 @@ $(NETLIST) $(NETLIST_DEBUG): $(VLOG_FILES)
 		| tee "$(YOSYS_DIR)/$(RTL_NAME).log" \
 		| grep -E "\[.*\] [0-9\.]+ Executing";
 
+yosys-slang: $(YOSYS_OUT)/$(RTL_NAME)_yosys_slang.v
+
+$(YOSYS_OUT)/$(RTL_NAME)_yosys_slang.v: $(SV_FLIST)
+	@mkdir -p $(YOSYS_OUT)
+	@mkdir -p $(YOSYS_WORK)
+	@mkdir -p $(YOSYS_REPORTS)
+	SV_FLIST="$(SV_FLIST)" \
+	TOP_DESIGN="$(TOP_DESIGN)" \
+	PROJ_NAME="$(RTL_NAME)" \
+	WORK="$(YOSYS_WORK)" \
+	BUILD="$(YOSYS_OUT)" \
+	REPORTS="$(YOSYS_REPORTS)" \
+	NETLIST="$(NETLIST)" \
+	$(YOSYS) -c $(YOSYS_DIR)/scripts/yosys_synthesis_slang.tcl \
+		2>&1 | TZ=UTC gawk '{ print strftime("[%Y-%m-%d %H:%M %Z]"), $$0 }' \
+		| tee "$(YOSYS_DIR)/$(RTL_NAME).log" \
+		| grep -E "\[.*\] [0-9\.]+ Executing";
+		
+
 clean:
 	rm -rf $(YOSYS_OUT)
 	rm -rf $(YOSYS_WORK)
 	rm -rf $(YOSYS_REPORTS) 
 	rm -f $(YOSYS_DIR)/$(RTL_NAME).log
 
-.PHONY: clean yosys synth
+.PHONY: clean yosys synth yosys-slang
